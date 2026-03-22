@@ -8,11 +8,13 @@ import Breadcrumbs from './components/Breadcrumbs';
 import FileList from './components/FileList';
 import PhotoGallery from './components/PhotoGallery';
 import MediaViewer from './components/MediaViewer';
+import ShareDialog from './components/ShareDialog';
 
 export default function App() {
   const [activeTab, setActiveTab] = createSignal('files');
   const [viewerFile, setViewerFile] = createSignal<FileItem | null>(null);
   const [viewerFiles, setViewerFiles] = createSignal<FileItem[]>([]);
+  const [shareFile, setShareFile] = createSignal<FileItem | null>(null);
 
   function handleTabChange(tab: string) {
     setActiveTab(tab);
@@ -22,11 +24,6 @@ export default function App() {
   function openViewer(file: FileItem, allFiles: FileItem[]) {
     setViewerFiles(allFiles);
     setViewerFile(file);
-  }
-
-  function closeViewer() {
-    setViewerFile(null);
-    setViewerFiles([]);
   }
 
   return (
@@ -41,7 +38,7 @@ export default function App() {
         <main class="main-content">
           <Show when={activeTab() === 'files'}>
             <Breadcrumbs />
-            <FileList onViewFile={openViewer} />
+            <FileList onViewFile={openViewer} onShareFile={(f) => setShareFile(f)} />
           </Show>
 
           <Show when={activeTab() === 'photos'}>
@@ -49,7 +46,16 @@ export default function App() {
           </Show>
         </main>
 
-        <MediaViewer file={viewerFile()} allFiles={viewerFiles()} onClose={closeViewer} />
+        <MediaViewer
+          file={viewerFile()}
+          allFiles={viewerFiles()}
+          onClose={() => { setViewerFile(null); setViewerFiles([]); }}
+        />
+
+        <ShareDialog
+          file={shareFile()}
+          onClose={() => setShareFile(null)}
+        />
       </Show>
     </>
   );

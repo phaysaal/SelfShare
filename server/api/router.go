@@ -76,6 +76,19 @@ func NewRouter(deps *RouterDeps) (http.Handler, *tasks.ThumbWorker) {
 	mux.HandleFunc("GET /api/v1/photos", photos.ListPhotos)
 	mux.HandleFunc("GET /api/v1/photos/timeline", photos.Timeline)
 
+	// Share API routes (authenticated)
+	shares := &ShareHandler{DB: deps.DB}
+	mux.HandleFunc("POST /api/v1/shares", shares.CreateShare)
+	mux.HandleFunc("GET /api/v1/shares", shares.ListShares)
+	mux.HandleFunc("DELETE /api/v1/shares/{id}", shares.RevokeShare)
+
+	// Public share pages (no auth)
+	pub := &PublicShareHandler{DB: deps.DB, Files: deps.Files}
+	mux.HandleFunc("GET /s/{token}", pub.ViewShare)
+	mux.HandleFunc("GET /s/{token}/download", pub.DownloadShare)
+	mux.HandleFunc("GET /s/{token}/view", pub.ViewShareInline)
+	mux.HandleFunc("POST /s/{token}/auth", pub.AuthShare)
+
 	// Health/discovery
 	mux.HandleFunc("GET /api/v1/ping", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{

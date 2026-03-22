@@ -2,7 +2,7 @@ import { For, Show, createSignal } from 'solid-js';
 import { files, loading, currentFolder, navigateToFolder, loadFiles } from '../stores/files';
 import { type FileItem, deleteFile, createFolder, uploadFile, downloadUrl } from '../api/client';
 
-export default function FileList(props: { onViewFile: (file: FileItem, allFiles: FileItem[]) => void }) {
+export default function FileList(props: { onViewFile: (file: FileItem, allFiles: FileItem[]) => void; onShareFile: (file: FileItem) => void }) {
   const [uploading, setUploading] = createSignal(false);
   const [uploadProgress, setUploadProgress] = createSignal<Record<string, number>>({});
   const [dragOver, setDragOver] = createSignal(false);
@@ -159,6 +159,7 @@ export default function FileList(props: { onViewFile: (file: FileItem, allFiles:
                     <button class="btn-icon" onClick={(e) => { e.stopPropagation(); props.onViewFile(f, files()); }}>View</button>
                   </Show>
                   <Show when={!f.is_dir}>
+                    <button class="btn-icon" onClick={(e) => { e.stopPropagation(); props.onShareFile(f); }}>Share</button>
                     <button class="btn-icon" onClick={(e) => { e.stopPropagation(); window.open(downloadUrl(f.id)); }}>Download</button>
                   </Show>
                   <button class="btn-icon danger" onClick={(e) => { e.stopPropagation(); handleDelete(f); }}>Delete</button>

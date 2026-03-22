@@ -206,3 +206,43 @@ export async function listTimeline(): Promise<TimelineGroup[]> {
   const resp = await apiFetch('/photos/timeline');
   return resp.json();
 }
+
+// --- Shares ---
+
+export interface ShareInfo {
+  id: string;
+  file_id: string;
+  file_name: string;
+  token: string;
+  url: string;
+  has_password: boolean;
+  expires_at?: string;
+  max_downloads?: number;
+  download_count: number;
+  created_at: string;
+}
+
+export async function createShare(fileId: string, password?: string, expiresIn?: number, maxDownloads?: number): Promise<ShareInfo> {
+  const body: any = { file_id: fileId };
+  if (password) body.password = password;
+  if (expiresIn) body.expires_in = expiresIn;
+  if (maxDownloads) body.max_downloads = maxDownloads;
+
+  const resp = await apiFetch('/shares', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || 'Failed to create share');
+  return data;
+}
+
+export async function listShares(): Promise<ShareInfo[]> {
+  const resp = await apiFetch('/shares');
+  return resp.json();
+}
+
+export async function revokeShare(id: string): Promise<void> {
+  await apiFetch(`/shares/${id}`, { method: 'DELETE' });
+}
