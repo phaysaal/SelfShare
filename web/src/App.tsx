@@ -9,6 +9,7 @@ import FileList from './components/FileList';
 import PhotoGallery from './components/PhotoGallery';
 import MediaViewer from './components/MediaViewer';
 import ShareDialog from './components/ShareDialog';
+import MoveDialog from './components/MoveDialog';
 import { TagSidebar } from './components/TagManager';
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
   const [viewerFile, setViewerFile] = createSignal<FileItem | null>(null);
   const [viewerFiles, setViewerFiles] = createSignal<FileItem[]>([]);
   const [shareFile, setShareFile] = createSignal<FileItem | null>(null);
+  const [moveFile, setMoveFile] = createSignal<FileItem | null>(null);
   const [selectedTag, setSelectedTag] = createSignal<string | null>(null);
 
   function handleTabChange(tab: string) {
@@ -63,7 +65,11 @@ export default function App() {
                 <Show when={!selectedTag()}>
                   <Breadcrumbs />
                 </Show>
-                <FileList onViewFile={openViewer} onShareFile={(f) => setShareFile(f)} />
+                <FileList
+                  onViewFile={openViewer}
+                  onShareFile={(f) => setShareFile(f)}
+                  onMoveFile={(f) => setMoveFile(f)}
+                />
               </div>
             </div>
           </Show>
@@ -79,9 +85,12 @@ export default function App() {
           onClose={() => { setViewerFile(null); setViewerFiles([]); }}
         />
 
-        <ShareDialog
-          file={shareFile()}
-          onClose={() => setShareFile(null)}
+        <ShareDialog file={shareFile()} onClose={() => setShareFile(null)} />
+
+        <MoveDialog
+          file={moveFile()}
+          onClose={() => setMoveFile(null)}
+          onMoved={() => loadFiles()}
         />
       </Show>
     </>

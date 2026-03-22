@@ -1,9 +1,13 @@
 import { For, Show, createSignal } from 'solid-js';
 import { displayFiles, loading, currentFolder, navigateToFolder, loadFiles } from '../stores/files';
-import { type FileItem, deleteFile, createFolder, uploadFile, downloadUrl } from '../api/client';
+import { type FileItem, deleteFile, createFolder, uploadFile, downloadUrl, renameFile } from '../api/client';
 import { FileTagEditor } from './TagManager';
 
-export default function FileList(props: { onViewFile: (file: FileItem, allFiles: FileItem[]) => void; onShareFile: (file: FileItem) => void }) {
+export default function FileList(props: {
+  onViewFile: (file: FileItem, allFiles: FileItem[]) => void;
+  onShareFile: (file: FileItem) => void;
+  onMoveFile: (file: FileItem) => void;
+}) {
   const [tagEditFile, setTagEditFile] = createSignal<FileItem | null>(null);
   const [uploading, setUploading] = createSignal(false);
   const [uploadProgress, setUploadProgress] = createSignal<Record<string, number>>({});
@@ -45,6 +49,17 @@ export default function FileList(props: { onViewFile: (file: FileItem, allFiles:
     if (!confirm(`Delete "${f.name}"?`)) return;
     try {
       await deleteFile(f.id);
+      loadFiles(currentFolder());
+    } catch (e: any) {
+      alert(e.message);
+    }
+  }
+
+  async function handleRename(f: FileItem) {
+    const newName = prompt('New name:', f.name);
+    if (!newName || newName === f.name) return;
+    try {
+      await renameFile(f.id, newName);
       loadFiles(currentFolder());
     } catch (e: any) {
       alert(e.message);
@@ -164,6 +179,8 @@ export default function FileList(props: { onViewFile: (file: FileItem, allFiles:
                   <Show when={isViewable(f.mime_type) && !f.is_dir}>
                     <button class="btn-icon" onClick={(e) => { e.stopPropagation(); props.onViewFile(f, displayFiles()); }}>View</button>
                   </Show>
+                  <button class="btn-icon" onClick={(e) => { e.stopPropagation(); handleRename(f); }}>Rename</button>
+                  <button class="btn-icon" onClick={(e) => { e.stopPropagation(); props.onMoveFile(f); }}>Move</button>
                   <Show when={!f.is_dir}>
                     <button class="btn-icon" onClick={(e) => { e.stopPropagation(); props.onShareFile(f); }}>Share</button>
                     <button class="btn-icon" onClick={(e) => { e.stopPropagation(); window.open(downloadUrl(f.id)); }}>Download</button>

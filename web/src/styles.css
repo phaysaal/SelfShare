@@ -231,6 +231,24 @@ a:hover { text-decoration: underline; }
 }
 .share-note { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
 
+/* === Move Dialog === */
+.move-breadcrumbs { margin-bottom: 12px; font-size: 13px; }
+.move-breadcrumbs a { color: var(--accent); cursor: pointer; }
+.move-breadcrumbs .sep { color: var(--text-muted); margin: 0 4px; }
+.move-breadcrumbs strong { color: var(--text); }
+.move-folder-list {
+  max-height: 280px; overflow-y: auto; margin-bottom: 16px;
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 4px;
+}
+.move-folder-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  border-radius: var(--radius-sm); cursor: pointer;
+}
+.move-folder-item:hover { background: var(--bg-hover); }
+.move-folder-icon { font-size: 18px; }
+.move-folder-name { flex: 1; font-size: 14px; color: var(--text); }
+.move-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
 /* === Tags === */
 .tag-badge {
   display: inline-flex; align-items: center; gap: 4px;
