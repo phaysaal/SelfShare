@@ -175,6 +175,52 @@ func (db *DB) GetByDiskPath(diskPath string) (*File, error) {
 	return f, nil
 }
 
+// DeleteByDiskPathPrefix permanently removes all files/folders whose disk_path
+// starts with the given prefix. Also cleans up related records (tags, thumbs, photo_meta).
+func (db *DB) DeleteByDiskPathPrefix(prefix string) (int64, error) {
+	// Collect IDs first for cleaning up related tables
+	rows, err := db.Query("SELECT id FROM files WHERE disk_path = ? OR disk_path LIKE ?", prefix, prefix+"/%")
+	if err != nil {
+		return 0, err
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
+	rows.Close()
+
+	if len(ids) == 0 {
+		return 0, nil
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return 0, err
+	}
+
+	for _, id := range ids {
+		tx.Exec("DELETE FROM file_tags WHERE file_id = ?", id)
+		tx.Exec("DELETE FROM thumbs WHERE file_id = ?", id)
+		tx.Exec("DELETE FROM photo_meta WHERE file_id = ?", id)
+		tx.Exec("DELETE FROM shares WHERE file_id = ?", id)
+	}
+
+	result, err := tx.Exec("DELETE FROM files WHERE disk_path = ? OR disk_path LIKE ?", prefix, prefix+"/%")
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	count, _ := result.RowsAffected()
+	return count, nil
+}
+
 // SoftDeleteFile sets deleted_at on a file (move to trash).
 func (db *DB) SoftDeleteFile(id string) error {
 	now := time.Now().UTC().Format(timeFormat)

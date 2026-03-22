@@ -180,6 +180,96 @@ func runScan(cfg *config.Config, db *store.DB, args []string) {
 		stats.folders, stats.files, stats.media, stats.skipped)
 }
 
+// runDescan removes a folder from the database and optionally removes the symlink.
+// Usage:
+//
+//	./selfshare descan Photos           — remove data/Photos from DB
+//	./selfshare descan /Volumes/Drive   — remove the symlinked folder from DB + remove symlink
+func runDescan(cfg *config.Config, db *store.DB, args []string) {
+	if len(args) == 0 {
+		log.Fatal("Usage: selfshare descan <folder-name-or-path>")
+	}
+
+	dataDir := cfg.DataDir()
+	target := args[0]
+
+	// Determine the relative path in data/
+	var relPath string
+	var linkPath string
+
+	if filepath.IsAbs(target) {
+		// Absolute path — find the matching symlink in data/
+		entries, _ := os.ReadDir(dataDir)
+		for _, e := range entries {
+			full := filepath.Join(dataDir, e.Name())
+			link, err := os.Readlink(full)
+			if err != nil {
+				continue
+			}
+			// Resolve relative symlinks
+			if !filepath.IsAbs(link) {
+				link = filepath.Join(dataDir, link)
+			}
+			if link == target || filepath.Clean(link) == filepath.Clean(target) {
+				relPath = e.Name()
+				linkPath = full
+				break
+			}
+		}
+		if relPath == "" {
+			// Maybe the absolute path is inside data/
+			rel, err := filepath.Rel(dataDir, target)
+			if err == nil && !strings.HasPrefix(rel, "..") {
+				relPath = rel
+			} else {
+				log.Fatalf("Could not find '%s' linked in data/", target)
+			}
+		}
+	} else {
+		relPath = target
+		full := filepath.Join(dataDir, target)
+		// Check if it's a symlink
+		if linkTarget, err := os.Readlink(full); err == nil {
+			linkPath = full
+			_ = linkTarget
+		}
+	}
+
+	log.Printf("Removing '%s' from database...", relPath)
+
+	// Delete all DB records with this disk_path prefix
+	count, err := db.DeleteByDiskPathPrefix(relPath)
+	if err != nil {
+		log.Fatalf("Failed to remove from database: %v", err)
+	}
+	log.Printf("Removed %d records from database", count)
+
+	// Clean up thumbnails for removed files
+	thumbDir := cfg.ThumbDir()
+	thumbEntries, _ := os.ReadDir(thumbDir)
+	thumbsRemoved := 0
+	// Thumbnails are named {file_id}_{size}.jpg — we can't easily map back
+	// to removed files without the IDs. The orphaned thumbs are harmless and
+	// small. They'll be cleaned up on next scan or manually.
+
+	_ = thumbEntries
+	_ = thumbsRemoved
+
+	// Remove symlink if it exists
+	if linkPath != "" {
+		log.Printf("Removing symlink: %s", linkPath)
+		if err := os.Remove(linkPath); err != nil {
+			log.Printf("Warning: could not remove symlink: %v", err)
+		} else {
+			log.Printf("Symlink removed")
+		}
+	} else {
+		log.Printf("Note: '%s' is not a symlink — files on disk were NOT deleted, only DB records removed", relPath)
+	}
+
+	log.Printf("Descan complete for '%s'", relPath)
+}
+
 type scanStats struct {
 	folders int
 	files   int

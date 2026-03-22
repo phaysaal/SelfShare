@@ -27,6 +27,10 @@ func main() {
 		runScanCommand(os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "descan" {
+		runDescanCommand(os.Args[2:])
+		return
+	}
 
 	configPath := flag.String("config", "", "path to config file")
 	storagePath := flag.String("storage", "", "override storage directory path")
@@ -155,6 +159,52 @@ func runScanCommand(args []string) {
 	defer db.Close()
 
 	runScan(cfg, db, scanFlags.Args())
+}
+
+func runDescanCommand(args []string) {
+	descanFlags := flag.NewFlagSet("descan", flag.ExitOnError)
+	configPath := descanFlags.String("config", "", "path to config file")
+	storagePath := descanFlags.String("storage", "", "override storage directory path")
+	descanFlags.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: selfshare descan [flags] <folder>")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Remove a folder from the database and unlink the symlink.")
+		fmt.Fprintln(os.Stderr, "Original files are NOT deleted — only DB records and the symlink.")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Examples:")
+		fmt.Fprintln(os.Stderr, "  selfshare descan Photos               # remove data/Photos from DB")
+		fmt.Fprintln(os.Stderr, "  selfshare descan /Volumes/HDD/Photos  # remove + unlink symlink")
+		fmt.Fprintln(os.Stderr, "")
+		descanFlags.PrintDefaults()
+	}
+	descanFlags.Parse(args)
+
+	if descanFlags.NArg() == 0 {
+		descanFlags.Usage()
+		os.Exit(1)
+	}
+
+	cfgPath := *configPath
+	if cfgPath == "" {
+		home, _ := os.UserHomeDir()
+		cfgPath = filepath.Join(home, ".selfshare", "config.json")
+	}
+
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	if *storagePath != "" {
+		cfg.StoragePath = *storagePath
+	}
+
+	db, err := store.Open(cfg.DBPath())
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	defer db.Close()
+
+	runDescan(cfg, db, descanFlags.Args())
 }
 
 func startTLS(cfg *config.Config, handler http.Handler) {
