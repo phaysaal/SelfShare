@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"embed"
 	"flag"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -21,6 +22,12 @@ import (
 var webDistFS embed.FS
 
 func main() {
+	// Check for subcommands before flag parsing
+	if len(os.Args) > 1 && os.Args[1] == "scan" {
+		runScanCommand(os.Args[2:])
+		return
+	}
+
 	configPath := flag.String("config", "", "path to config file")
 	storagePath := flag.String("storage", "", "override storage directory path")
 	listenAddr := flag.String("listen", "", "override listen address (e.g. :8080)")
@@ -103,6 +110,51 @@ func main() {
 			log.Fatalf("Server failed: %v", err)
 		}
 	}
+}
+
+func runScanCommand(args []string) {
+	scanFlags := flag.NewFlagSet("scan", flag.ExitOnError)
+	configPath := scanFlags.String("config", "", "path to config file")
+	storagePath := scanFlags.String("storage", "", "override storage directory path")
+	scanFlags.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: selfshare scan [flags] [path]")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Scan a directory and import files into the database.")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Examples:")
+		fmt.Fprintln(os.Stderr, "  selfshare scan                      # scan entire data/ directory")
+		fmt.Fprintln(os.Stderr, "  selfshare scan Photos               # scan data/Photos/")
+		fmt.Fprintln(os.Stderr, "  selfshare scan /Volumes/HDD/Photos  # symlink into data/ and scan")
+		fmt.Fprintln(os.Stderr, "")
+		scanFlags.PrintDefaults()
+	}
+	scanFlags.Parse(args)
+
+	cfgPath := *configPath
+	if cfgPath == "" {
+		home, _ := os.UserHomeDir()
+		cfgPath = filepath.Join(home, ".selfshare", "config.json")
+	}
+
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	if *storagePath != "" {
+		cfg.StoragePath = *storagePath
+	}
+
+	for _, dir := range []string{cfg.DataDir(), cfg.ThumbDir()} {
+		os.MkdirAll(dir, 0755)
+	}
+
+	db, err := store.Open(cfg.DBPath())
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	defer db.Close()
+
+	runScan(cfg, db, scanFlags.Args())
 }
 
 func startTLS(cfg *config.Config, handler http.Handler) {

@@ -151,6 +151,30 @@ func (db *DB) GetByParentAndName(parentID, name string) (*File, error) {
 	return f, nil
 }
 
+// GetByDiskPath finds a file by its disk path.
+func (db *DB) GetByDiskPath(diskPath string) (*File, error) {
+	f := &File{}
+	var isDir int
+	var createdAt, updatedAt string
+	var deletedAt sql.NullString
+
+	err := db.QueryRow(`
+		SELECT id, parent_id, name, is_dir, size_bytes, mime_type, sha256, disk_path, created_at, updated_at, deleted_at
+		FROM files WHERE disk_path = ? AND deleted_at IS NULL`, diskPath,
+	).Scan(&f.ID, &f.ParentID, &f.Name, &isDir, &f.SizeBytes, &f.MimeType, &f.SHA256, &f.DiskPath, &createdAt, &updatedAt, &deletedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get by disk path: %w", err)
+	}
+
+	f.IsDir = isDir == 1
+	f.CreatedAt, _ = time.Parse(timeFormat, createdAt)
+	f.UpdatedAt, _ = time.Parse(timeFormat, updatedAt)
+	return f, nil
+}
+
 // SoftDeleteFile sets deleted_at on a file (move to trash).
 func (db *DB) SoftDeleteFile(id string) error {
 	now := time.Now().UTC().Format(timeFormat)
