@@ -1,8 +1,10 @@
 import { For, Show, createSignal } from 'solid-js';
-import { files, loading, currentFolder, navigateToFolder, loadFiles } from '../stores/files';
+import { displayFiles, loading, currentFolder, navigateToFolder, loadFiles } from '../stores/files';
 import { type FileItem, deleteFile, createFolder, uploadFile, downloadUrl } from '../api/client';
+import { FileTagEditor } from './TagManager';
 
 export default function FileList(props: { onViewFile: (file: FileItem, allFiles: FileItem[]) => void; onShareFile: (file: FileItem) => void }) {
+  const [tagEditFile, setTagEditFile] = createSignal<FileItem | null>(null);
   const [uploading, setUploading] = createSignal(false);
   const [uploadProgress, setUploadProgress] = createSignal<Record<string, number>>({});
   const [dragOver, setDragOver] = createSignal(false);
@@ -35,7 +37,7 @@ export default function FileList(props: { onViewFile: (file: FileItem, allFiles:
     if (f.is_dir) {
       navigateToFolder(f.id, f.name);
     } else if (isViewable(f.mime_type)) {
-      props.onViewFile(f, files());
+      props.onViewFile(f, displayFiles());
     }
   }
 
@@ -132,7 +134,7 @@ export default function FileList(props: { onViewFile: (file: FileItem, allFiles:
         <div class="empty">Loading...</div>
       </Show>
 
-      <Show when={!loading() && files().length === 0}>
+      <Show when={!loading() && displayFiles().length === 0}>
         <div class="empty">
           This folder is empty. Upload files or create a folder to get started.
           <br /><br />
@@ -140,9 +142,9 @@ export default function FileList(props: { onViewFile: (file: FileItem, allFiles:
         </div>
       </Show>
 
-      <Show when={!loading() && files().length > 0}>
+      <Show when={!loading() && displayFiles().length > 0}>
         <ul class="file-list">
-          <For each={files()}>
+          <For each={displayFiles()}>
             {(f) => (
               <li class="file-item" onClick={() => handleClick(f)}>
                 <div class="file-icon">{fileIcon(f)}</div>
@@ -154,9 +156,13 @@ export default function FileList(props: { onViewFile: (file: FileItem, allFiles:
                     {new Date(f.created_at).toLocaleDateString()}
                   </div>
                 </div>
-                <div class="file-actions">
+                <div class="file-actions" style={{ position: 'relative' }}>
+                  <button class="btn-icon" onClick={(e) => { e.stopPropagation(); setTagEditFile(tagEditFile()?.id === f.id ? null : f); }}>Tag</button>
+                  <Show when={tagEditFile()?.id === f.id}>
+                    <FileTagEditor file={f} onClose={() => setTagEditFile(null)} />
+                  </Show>
                   <Show when={isViewable(f.mime_type) && !f.is_dir}>
-                    <button class="btn-icon" onClick={(e) => { e.stopPropagation(); props.onViewFile(f, files()); }}>View</button>
+                    <button class="btn-icon" onClick={(e) => { e.stopPropagation(); props.onViewFile(f, displayFiles()); }}>View</button>
                   </Show>
                   <Show when={!f.is_dir}>
                     <button class="btn-icon" onClick={(e) => { e.stopPropagation(); props.onShareFile(f); }}>Share</button>

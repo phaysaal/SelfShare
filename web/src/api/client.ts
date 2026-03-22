@@ -246,3 +246,61 @@ export async function listShares(): Promise<ShareInfo[]> {
 export async function revokeShare(id: string): Promise<void> {
   await apiFetch(`/shares/${id}`, { method: 'DELETE' });
 }
+
+// --- Tags ---
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  count?: number;
+}
+
+export async function listTags(): Promise<Tag[]> {
+  const resp = await apiFetch('/tags');
+  return resp.json();
+}
+
+export async function createTag(name: string, color?: string): Promise<Tag> {
+  const resp = await apiFetch('/tags', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, color }),
+  });
+  return resp.json();
+}
+
+export async function deleteTag(id: string): Promise<void> {
+  await apiFetch(`/tags/${id}`, { method: 'DELETE' });
+}
+
+export async function getFileTags(fileId: string): Promise<Tag[]> {
+  const resp = await apiFetch(`/files/${fileId}/tags`);
+  return resp.json();
+}
+
+export async function tagFile(fileId: string, tagIdOrName: string): Promise<Tag[]> {
+  const body: any = {};
+  // If it looks like a UUID, use tag_id; otherwise treat as name (auto-create)
+  if (tagIdOrName.includes('-') && tagIdOrName.length > 30) {
+    body.tag_id = tagIdOrName;
+  } else {
+    body.name = tagIdOrName;
+  }
+  const resp = await apiFetch(`/files/${fileId}/tags`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return resp.json();
+}
+
+export async function untagFile(fileId: string, tagId: string): Promise<Tag[]> {
+  const resp = await apiFetch(`/files/${fileId}/tags/${tagId}`, { method: 'DELETE' });
+  return resp.json();
+}
+
+export async function listFilesByTag(tagId: string): Promise<FileItem[]> {
+  const resp = await apiFetch(`/tags/${tagId}/files`);
+  return resp.json();
+}

@@ -76,6 +76,17 @@ func NewRouter(deps *RouterDeps) (http.Handler, *tasks.ThumbWorker) {
 	mux.HandleFunc("GET /api/v1/photos", photos.ListPhotos)
 	mux.HandleFunc("GET /api/v1/photos/timeline", photos.Timeline)
 
+	// Tag routes
+	tags := &TagHandler{DB: deps.DB}
+	mux.HandleFunc("GET /api/v1/tags", tags.ListTags)
+	mux.HandleFunc("POST /api/v1/tags", tags.CreateTag)
+	mux.HandleFunc("PUT /api/v1/tags/{id}", tags.UpdateTag)
+	mux.HandleFunc("DELETE /api/v1/tags/{id}", tags.DeleteTag)
+	mux.HandleFunc("GET /api/v1/tags/{id}/files", tags.ListFilesByTag)
+	mux.HandleFunc("GET /api/v1/files/{id}/tags", tags.GetFileTags)
+	mux.HandleFunc("POST /api/v1/files/{id}/tags", tags.TagFile)
+	mux.HandleFunc("DELETE /api/v1/files/{id}/tags/{tagId}", tags.UntagFile)
+
 	// Share API routes (authenticated)
 	shares := &ShareHandler{DB: deps.DB}
 	mux.HandleFunc("POST /api/v1/shares", shares.CreateShare)
