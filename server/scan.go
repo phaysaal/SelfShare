@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/faisal/selfshare/config"
 	"github.com/faisal/selfshare/store"
@@ -171,10 +170,10 @@ func runScan(cfg *config.Config, db *store.DB, args []string) {
 		log.Fatalf("Scan failed: %v", err)
 	}
 
-	// Wait a bit for thumbnails to finish
+	// Wait for all thumbnails to finish
 	if stats.media > 0 {
-		log.Printf("Waiting for thumbnails to generate...")
-		time.Sleep(time.Duration(stats.media) * 500 * time.Millisecond)
+		log.Printf("Generating thumbnails for %d media files...", stats.media)
+		thumbWorker.Wait()
 	}
 
 	log.Printf("Scan complete: %d folders, %d files (%d media), %d skipped (already in DB)",

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/disintegration/imaging"
 	"github.com/faisal/selfshare/store"
@@ -35,6 +36,7 @@ type ThumbWorker struct {
 	DB       *store.DB
 	ThumbDir string
 	Jobs     chan ThumbJob
+	wg       sync.WaitGroup
 }
 
 // NewThumbWorker creates a worker and starts numWorkers goroutines.
@@ -57,16 +59,24 @@ func NewThumbWorker(db *store.DB, thumbDir string, numWorkers int) *ThumbWorker 
 
 // Enqueue adds a thumbnail job to the queue.
 func (w *ThumbWorker) Enqueue(job ThumbJob) {
+	w.wg.Add(1)
 	select {
 	case w.Jobs <- job:
 	default:
+		w.wg.Done()
 		log.Printf("Thumbnail queue full, dropping job for %s", job.FileID)
 	}
+}
+
+// Wait blocks until all enqueued jobs have been processed.
+func (w *ThumbWorker) Wait() {
+	w.wg.Wait()
 }
 
 func (w *ThumbWorker) run() {
 	for job := range w.Jobs {
 		w.processJob(job)
+		w.wg.Done()
 	}
 }
 
