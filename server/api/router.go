@@ -100,6 +100,11 @@ func NewRouter(deps *RouterDeps) (http.Handler, *tasks.ThumbWorker) {
 	mux.HandleFunc("GET /s/{token}/view", pub.ViewShareInline)
 	mux.HandleFunc("POST /s/{token}/auth", pub.AuthShare)
 
+	// App download page (public)
+	appPage := &AppDownloadHandler{StoragePath: deps.Cfg.StoragePath}
+	mux.HandleFunc("GET /app", appPage.ServePage)
+	mux.HandleFunc("GET /app/download", appPage.ServeAPK)
+
 	// Health/discovery
 	mux.HandleFunc("GET /api/v1/ping", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{

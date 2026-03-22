@@ -79,6 +79,11 @@ func isPublicRoute(r *http.Request) bool {
 		return true
 	}
 
+	// App download page
+	if path == "/app" || strings.HasPrefix(path, "/app/") {
+		return true
+	}
+
 	// Share pages
 	if strings.HasPrefix(path, "/s/") {
 		return true
