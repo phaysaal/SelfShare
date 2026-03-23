@@ -18,10 +18,15 @@ export default function Header(props: { activeTab: string; onTabChange: (tab: st
           >
             Photos
           </button>
+          <button
+            class={props.activeTab === 'downloads' ? 'tab active' : 'tab'}
+            onClick={() => props.onTabChange('downloads')}
+          >
+            Downloads
+          </button>
         </nav>
       </div>
       <div class="header-right">
-        <a href="/app" class="btn-ghost" style={{ "text-decoration": "none" }}>Get App</a>
         <span class="user-name">{user()?.display_name || user()?.username}</span>
         <button class="btn-ghost" onClick={logout}>Sign Out</button>
       </div>

@@ -10,6 +10,7 @@ import PhotoGallery from './components/PhotoGallery';
 import MediaViewer from './components/MediaViewer';
 import ShareDialog from './components/ShareDialog';
 import MoveDialog from './components/MoveDialog';
+import Downloads from './pages/Downloads';
 import { TagSidebar } from './components/TagManager';
 
 export default function App() {
@@ -76,6 +77,10 @@ export default function App() {
 
           <Show when={activeTab() === 'photos'}>
             <PhotoGallery onViewPhoto={openViewer} />
+          </Show>
+
+          <Show when={activeTab() === 'downloads'}>
+            <Downloads />
           </Show>
         </main>
 
