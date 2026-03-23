@@ -78,6 +78,8 @@ a:hover { text-decoration: underline; }
 .field input:focus { border-color: var(--accent); }
 
 .error-text { color: var(--danger); font-size: 14px; margin-top: 12px; }
+.login-footer { text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.login-footer a { color: var(--accent); font-size: 14px; }
 
 /* === Header === */
 .header {

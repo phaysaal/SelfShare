@@ -52,6 +52,9 @@ export default function Login() {
           </button>
           {error() && <div class="error-text">{error()}</div>}
         </form>
+        <div class="login-footer">
+          <a href="/app">Get the Android App</a>
+        </div>
       </div>
     </div>
   );

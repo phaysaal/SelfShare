@@ -21,6 +21,7 @@ export default function Header(props: { activeTab: string; onTabChange: (tab: st
         </nav>
       </div>
       <div class="header-right">
+        <a href="/app" class="btn-ghost" style={{ "text-decoration": "none" }}>Get App</a>
         <span class="user-name">{user()?.display_name || user()?.username}</span>
         <button class="btn-ghost" onClick={logout}>Sign Out</button>
       </div>
